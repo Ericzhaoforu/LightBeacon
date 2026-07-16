@@ -1,0 +1,55 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Host: test",
+      "type": "shell",
+      "command": "${workspaceFolder}\\.venv\\Scripts\\python.exe",
+      "args": ["-m", "pytest"],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Web: build",
+      "type": "shell",
+      "command": "npm.cmd",
+      "args": ["run", "build"],
+      "options": { "cwd": "${workspaceFolder}/web" },
+      "group": "build",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "Firmware: build",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\idf.ps1",
+        "build"
+      ],
+      "options": { "cwd": "${workspaceFolder}/firmware" },
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Firmware: flash COM6",
+      "type": "shell",
+      "command": "powershell.exe",
+      "args": [
+        "-NoProfile",
+        "-ExecutionPolicy",
+        "Bypass",
+        "-File",
+        "${workspaceFolder}\\scripts\\idf.ps1",
+        "-p",
+        "COM6",
+        "flash"
+      ],
+      "options": { "cwd": "${workspaceFolder}/firmware" },
+      "problemMatcher": []
+    }
+  ]
+}

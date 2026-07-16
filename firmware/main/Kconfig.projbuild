@@ -1,0 +1,45 @@
+menu "LightBeacon"
+
+config LB_SIDE_GPIO
+    int "Side strip GPIO"
+    default 18
+    range 0 33
+
+config LB_TOP_GPIO
+    int "Top matrix GPIO"
+    default 19
+    range 0 33
+
+config LB_SIDE_LED_COUNT
+    int "Default side strip LED count"
+    default 288
+    range 1 1024
+
+config LB_TOP_LED_COUNT
+    int "Default top matrix LED count"
+    default 64
+    range 1 256
+
+config LB_BRIGHTNESS_CAP
+    int "Default brightness safety cap (%)"
+    default 25
+    range 1 100
+
+config LB_UDP_PORT
+    int "UDP protocol port"
+    default 40404
+    range 1024 65535
+
+config LB_FAILSAFE_MS
+    int "Heartbeat failsafe timeout (ms)"
+    default 5000
+    range 1000 60000
+
+config LB_PROVISIONING_PASSWORD
+    string "Development SoftAP password"
+    default "lightbeacon-dev"
+    help
+        Override for deployment. Do not use the default password in the field.
+
+endmenu
+

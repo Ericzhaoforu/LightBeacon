@@ -1,0 +1,25 @@
+idf_component_register(
+    SRCS
+        "app_main.c"
+        "lb_config.c"
+        "lb_effect.c"
+        "lb_ota.c"
+        "lb_protocol.c"
+        "lb_udp.c"
+        "lb_wifi.c"
+    INCLUDE_DIRS "."
+    REQUIRES
+        app_update
+        driver
+        esp_event
+        esp_driver_gpio
+        esp_http_client
+        esp_http_server
+        esp_netif
+        esp_timer
+        esp_wifi
+        cjson
+        mbedtls
+        nvs_flash
+        spi_flash
+)
