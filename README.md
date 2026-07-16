@@ -12,17 +12,47 @@ LightBeacon 是一套运行在专用局域网内的 ESP32 灯光控制系统。�
 
 现场接线、ESP32 配网、控制台操作和故障排查请优先阅读 [中文用户手册](docs/OPERATOR_GUIDE_ZH.md)。
 
-## 在一台新控制电脑上安装
+## 在一台全新的 Windows 控制电脑上安装
 
-### 1. 前置软件
+只运行 LightBeacon 控制主机需要 Git、Python 3.12、Node.js 24.x LTS 和 npm。正常控制不需要 ESP-IDF，也不需要重新编译或烧录 ESP32。
 
-只运行控制主机时需要：
+首次安装软件和下载依赖需要互联网；全部安装完成并构建网页后，现场运行只需要 LightBeacon 局域网。
 
-- Git；
-- Python 3.12；
-- Node.js 24.x（推荐）和 npm，用于首次构建网页。
+### 1. 安装 Git、Python 和 Node.js
 
-Windows 安装完成后可先确认：
+#### 方法 A：使用 winget（推荐）
+
+Windows 10/11 一般自带 `winget`。打开一个普通 PowerShell，先检查：
+
+```powershell
+winget --version
+```
+
+如果能显示版本号，依次执行：
+
+```powershell
+winget install --id Git.Git -e --source winget
+winget install 9NQ7512CXL7T
+winget install --id OpenJS.NodeJS.LTS -e --source winget
+```
+
+中间的命令安装 Python 官方 Install Manager。安装程序需要管理员权限时，Windows 会自动弹出确认窗口。三项安装完成后，关闭当前 PowerShell，再重新打开一个 PowerShell，让新的 PATH 生效，然后安装本项目使用的 Python 3.12：
+
+```powershell
+py install 3.12
+```
+
+#### 方法 B：使用官方图形安装器
+
+如果电脑没有 `winget`，分别下载安装：
+
+1. [Git for Windows](https://git-scm.com/install/windows)：下载 x64 安装器，普通用户保持默认选项即可。
+2. [Python 官方下载页](https://www.python.org/downloads/)：下载并安装 **Python Install Manager**；也可以在 Microsoft Store 搜索 **Python install manager**。安装后重新打开 PowerShell，执行 `py install 3.12`。
+3. [Node.js](https://nodejs.org/en/download)：选择 **24.x LTS** 的 Windows x64 `.msi` 安装器。保持默认组件，确认包含 npm；LightBeacon 不需要额外安装原生编译工具。
+
+Python 官方现在推荐使用 Install Manager 安装和管理 Windows Python 运行时。它会继续更新自身，也能明确安装本项目已验证的 Python 3.12。不要从非官方软件下载站下载安装包。
+
+安装完成后重新打开 PowerShell，并检查四个命令：
 
 ```powershell
 git --version
@@ -31,11 +61,13 @@ node --version
 npm.cmd --version
 ```
 
-如果 `py -3.12` 找不到解释器，请安装 Python 3.12 后重新打开 PowerShell。当前网页工具链要求 Node.js `^20.19.0`、`^22.12.0` 或 `>=24.0.0`，直接使用 Node.js 24.x 最省事。
+预期能看到 Python `3.12.x`、Node.js `v24.x`，以及 Git/npm 的版本号。如果 `py -3.12` 提示尚未安装该版本，执行 `py install 3.12`。如果 `py` 命令本身找不到，先重启 PowerShell，再到 Windows 的“管理应用执行别名”中确认 Python Install Manager 的 `py` 别名已经启用。如果 `python --version` 已能显示 Python 3.12，也可以在后续创建虚拟环境时用 `python` 替代 `py -3.12`。
 
-正常控制不需要 ESP-IDF，也不需要重新编译或烧录 ESP32。首次下载依赖需要互联网；依赖装好、网页构建完成后，现场运行只需要 LightBeacon 局域网。
+当前网页工具链要求 Node.js `^20.19.0`、`^22.12.0` 或 `>=24.0.0`，推荐直接使用当前的 24.x LTS。
 
 ### 2. 克隆公开仓库
+
+在希望保存项目的目录中打开 PowerShell：
 
 ```powershell
 git clone https://github.com/Ericzhaoforu/LightBeacon.git
@@ -44,26 +76,75 @@ cd LightBeacon
 
 仓库虽然是公开的，但不包含系统授权信息和现场数据：`.env`、`data/`、`.venv/`、日志、网页构建结果及固件密钥均由 `.gitignore` 排除。
 
-### 3. Windows：安装 Python 依赖并构建网页
+### 3. 创建 Python 虚拟环境
 
-在项目根目录打开 PowerShell：
+下面的命令必须在刚才进入的 `LightBeacon` 项目根目录执行：
 
 ```powershell
 py -3.12 -m venv .venv
+.\.venv\Scripts\python.exe --version
+```
+
+第一条命令会在当前项目中创建 `.venv/`，第二条用于确认其中的解释器是 Python 3.12。
+
+- `.venv/` 是 Python 的独立运行环境，用来隔离本项目依赖；
+- `.env` 是后面保存 HMAC 密钥和系统配置的文本文件；
+- 两者名称相似，但用途完全不同，都不应提交到 GitHub；
+- 不要从旧电脑复制 `.venv/`，每台电脑都应使用以上命令重新创建。
+
+本项目不要求“激活”虚拟环境，后续命令会直接调用 `.venv` 中的 Python，因此不会受到 PowerShell 执行策略影响。如果希望手动激活，可以执行：
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+```
+
+激活后命令行前通常会出现 `(.venv)`；使用 `deactivate` 退出。若 PowerShell 阻止 `Activate.ps1`，无需修改系统策略，继续使用文档中的 `.\.venv\Scripts\python.exe` 完整路径即可。
+
+### 4. 安装 Python 项目依赖
+
+仍在项目根目录执行：
+
+```powershell
 .\.venv\Scripts\python.exe -m pip install --upgrade pip
 .\.venv\Scripts\python.exe -m pip install -e .
+```
 
+第一条更新虚拟环境自己的 pip；第二条根据仓库中的 `pyproject.toml` 安装 FastAPI、Uvicorn 和 LightBeacon 主机程序。不要直接使用系统级 `pip install`。
+
+安装完成后检查：
+
+```powershell
+.\.venv\Scripts\python.exe -c "import fastapi, uvicorn; print('Python dependencies OK')"
+```
+
+### 5. 安装网页依赖并构建控制台
+
+```powershell
 cd web
 npm.cmd ci
 npm.cmd run build
 cd ..
 ```
 
-这里特意使用 `npm.cmd`：部分 Windows PowerShell 会因执行策略拦截 `npm.ps1`，`npm.cmd` 不需要修改系统执行策略。网页构建结果位于 `web/dist/`，该目录不会提交到 GitHub，所以每台新控制电脑都要构建一次。
+看到 Vite 输出 `built` 或 `✓ built` 即表示网页构建成功。构建结果位于 `web/dist/`。该目录不会提交到 GitHub，所以每台新控制电脑首次 clone 后都必须构建一次。
 
-### 4. Linux：安装 Python 依赖并构建网页
+这里特意使用 `npm.cmd`：部分 Windows PowerShell 会因执行策略拦截 `npm.ps1`，`npm.cmd` 不需要修改系统执行策略。如果 `npm.cmd ci` 失败，先确认电脑能访问互联网，再检查 `node --version` 和 `npm.cmd --version`。
+
+### 6. Linux 安装摘要
+
+以带 Python 3.12 的 Ubuntu 为例：
 
 ```sh
+sudo apt update
+sudo apt install -y git python3.12 python3.12-venv python3-pip
+```
+
+Node.js 可按照 [Node.js 官方下载页](https://nodejs.org/en/download) 安装 24.x LTS。安装 Git、Python 和 Node.js 后执行：
+
+```sh
+git clone https://github.com/Ericzhaoforu/LightBeacon.git
+cd LightBeacon
+
 python3.12 -m venv .venv
 .venv/bin/python -m pip install --upgrade pip
 .venv/bin/python -m pip install -e .
