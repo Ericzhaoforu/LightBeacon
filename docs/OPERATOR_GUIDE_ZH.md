@@ -270,7 +270,7 @@ http://<控制主机的局域网IP>:8080/
 
 #### 通过 GitHub 迁移源码
 
-可以把可提交的源码上传到 GitHub，另一台电脑再通过 `git clone` 或 `git pull` 获取。推荐使用私有仓库。不要理解成“除 `.env` 外的所有本地文件都上传”：应让项目根目录的 `.gitignore` 正常排除本地环境、生成文件和秘密。
+项目源码已放在公开 GitHub 仓库，另一台电脑可通过 `git clone` 或 `git pull` 获取。公开的是程序源码，不是系统控制权限。不要理解成“除 `.env` 外的所有本地文件都上传”：项目根目录的 `.gitignore` 会排除本地环境、生成文件、现场数据和秘密。
 
 以下内容不应上传：
 
@@ -293,10 +293,10 @@ git ls-files .env
 
 #### 新 Windows 主机：从 GitHub 安装
 
-新电脑需要预先安装 Git、Python 3.12、Node.js/npm。以下命令只安装和构建程序，不需要修改源码：
+新电脑需要预先安装 Git、Python 3.12、Node.js 24.x（推荐）和 npm。当前网页工具链也支持 Node.js `^20.19.0` 或 `^22.12.0`。安装完成后，可先在 PowerShell 中确认 `git --version`、`py -3.12 --version`、`node --version` 和 `npm.cmd --version` 都能正常输出。以下命令只安装和构建程序，不需要修改源码：
 
 ```powershell
-git clone <GitHub仓库地址> LightBeacon
+git clone https://github.com/Ericzhaoforu/LightBeacon.git
 cd LightBeacon
 
 py -3.12 -m venv .venv
@@ -304,12 +304,14 @@ py -3.12 -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -e .
 
 cd web
-npm ci
-npm run build
+npm.cmd ci
+npm.cmd run build
 cd ..
 ```
 
-`pip install -e .` 会安装 FastAPI、Uvicorn 和主机所需的 Python 依赖。`npm ci` 和 `npm run build` 会依据仓库中的锁定文件生成 `web/dist/` 控制台页面。正常运行不需要安装 ESP-IDF，也不需要重新编译 ESP32 固件。
+`pip install -e .` 会安装 FastAPI、Uvicorn 和主机所需的 Python 依赖。`npm.cmd ci` 和 `npm.cmd run build` 会依据仓库中的锁定文件生成 `web/dist/` 控制台页面。这里使用 `npm.cmd`，是为了避免部分 Windows PowerShell 因执行策略阻止 `npm.ps1`；不需要为此修改系统执行策略。正常运行不需要安装 ESP-IDF，也不需要重新编译 ESP32 固件。
+
+首次克隆后必须构建网页，因为 `web/dist/` 是生成文件，不会随 GitHub 仓库下载。安装 Python/npm 依赖时需要互联网；安装和构建完成后，现场控制不需要公共互联网。
 
 完成以上步骤后，通过安全渠道把原主机的 `.env` 放到新项目根目录。不要把 `.env` 放进 GitHub。然后根据新电脑现场网卡的 IPv4 地址修改：
 
@@ -344,7 +346,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-host.ps1
 #### 新 Linux 主机：从 GitHub 安装
 
 ```sh
-git clone <GitHub仓库地址> LightBeacon
+git clone https://github.com/Ericzhaoforu/LightBeacon.git
 cd LightBeacon
 
 python3.12 -m venv .venv
@@ -376,7 +378,22 @@ Linux 同样需要把原 `.env` 通过安全渠道放到项目根目录，并修
 11. 等待节点自动出现；核对在线数量、节点 ID、MAC、RSSI 和是否存在 ID 冲突。
 12. 如果复制了 `data/`，核对原二维布局；否则重新绑定布局并保存。
 13. 只选一个节点，以 5% 亮度测试 `SOLID_BLUE`，然后发送 `OFF`。
-14. 全部检查通过后再恢复现场操作，并安全删除迁移过程中产生的密钥临时副本。
+14. 再测试一个闪烁灯效和“紧急全灭”，确认命令 ACK 和节点状态正常。
+15. 全部检查通过后再恢复现场操作，并安全删除迁移过程中产生的密钥临时副本。
+
+#### 在第二台电脑上的建议验收与回退
+
+第一次实际切换控制主机时，先只接一个节点或只选一个节点，以 5% 亮度完成小范围验收。新服务启动后会建立新的会话并立即要求节点全灭；节点通常应在约 5 秒内出现在控制台。由于 `data/` 不在 GitHub 中，未单独复制时控制台没有原二维布局属于正常现象，需要重新绑定并保存。
+
+建议记录以下结果：
+
+- 新主机能登录控制台并显示“实时连接”；
+- 在线节点数、节点 ID、MAC 和 RSSI 正确；
+- `SOLID_BLUE`、一种闪烁灯效、`OFF` 和“紧急全灭”均成功；
+- 每条灯效命令都收到目标节点 ACK；
+- 新主机重启后节点先保持 `OFF`，不会恢复旧灯效。
+
+若验证不通过，先在新主机按 `Ctrl+C` 停止服务，再在原主机重新启动 LightBeacon。只要原 `.env` 和节点配置未被修改，原主机可以直接接管；回退过程中仍然禁止两台主机同时运行。
 
 #### 新主机发现不了节点
 
